@@ -1,9 +1,12 @@
--- Script do Zenin Hub para Blue Lock Rivals com o Estilo Gojo
--- Este script contém o sistema de seleção de estilo, incluindo Gojo e suas habilidades
+-- Zenin Hub para Blue Lock Rivals (versão segura contra kick)
+
+repeat wait() until game:IsLoaded()
+wait(10) -- aguarda o jogo carregar totalmente
 
 local player = game.Players.LocalPlayer
-local character = player.Character
+local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
+local hrp = character:WaitForChild("HumanoidRootPart")
 
 -- Atributos do Estilo Gojo
 local styleActive = false
@@ -11,195 +14,111 @@ local healthRegenCooldown = 0
 local teleportCooldown = 0
 local domainCooldown = 0
 
--- Função para ativar a Técnica do Infinito (redução de velocidade dos inimigos próximos)
-local function activateInfinityTechnique()
-    styleActive = true
-    -- Reduz a velocidade dos inimigos próximos
-    local range = 20 -- raio de ação
-    for _, enemy in pairs(game.Workspace:GetChildren()) do
-        if enemy:IsA("Model") and enemy:FindFirstChild("Humanoid") and enemy ~= character then
-            local distance = (enemy.PrimaryPart.Position - character.PrimaryPart.Position).magnitude
-            if distance < range then
-                local enemyHumanoid = enemy:FindFirstChild("Humanoid")
-                if enemyHumanoid then
-                    enemyHumanoid.WalkSpeed = enemyHumanoid.WalkSpeed * 0.5 -- Reduzindo a velocidade
-                end
-            end
-        end
-    end
+-- Safe speed boost (usando BodyVelocity)
+local function simulateSpeed()
+    local bv = Instance.new("BodyVelocity")
+    bv.MaxForce = Vector3.new(1, 0, 1) * 1e5
+    bv.Velocity = hrp.CFrame.LookVector * 100
+    bv.Parent = hrp
+    game.Debris:AddItem(bv, 0.1)
 end
 
--- Função para reverter a Técnica do Infinito
-local function deactivateInfinityTechnique()
-    styleActive = false
-    -- Restaura a velocidade normal dos inimigos
-    for _, enemy in pairs(game.Workspace:GetChildren()) do
-        if enemy:IsA("Model") and enemy:FindFirstChild("Humanoid") and enemy ~= character then
-            local enemyHumanoid = enemy:FindFirstChild("Humanoid")
-            if enemyHumanoid then
-                enemyHumanoid.WalkSpeed = 16 -- Velocidade padrão
-            end
-        end
-    end
+-- Safe teleport usando impulso
+local function safeTeleport(position)
+    local bv = Instance.new("BodyVelocity")
+    bv.MaxForce = Vector3.new(1, 1, 1) * 1e5
+    bv.Velocity = (position - hrp.Position).unit * 100
+    bv.Parent = hrp
+    game.Debris:AddItem(bv, 0.1)
 end
 
--- Função para ativar o Domínio Expandido (danos contínuos)
-local function activateDomainExpansion()
-    if domainCooldown == 0 then
-        domainCooldown = 20
-        -- Aplica dano contínuo aos inimigos próximos
-        local range = 10
-        for _, enemy in pairs(game.Workspace:GetChildren()) do
-            if enemy:IsA("Model") and enemy:FindFirstChild("Humanoid") and enemy ~= character then
-                local distance = (enemy.PrimaryPart.Position - character.PrimaryPart.Position).magnitude
-                if distance < range then
-                    local enemyHumanoid = enemy:FindFirstChild("Humanoid")
-                    if enemyHumanoid then
-                        enemyHumanoid:TakeDamage(5) -- Dano contínuo
-                    end
-                end
-            end
-        end
-        -- Exemplo de efeito visual para o domínio expandido
-        local domainEffect = Instance.new("Part")
-        domainEffect.Size = Vector3.new(20, 1, 20)
-        domainEffect.Position = character.PrimaryPart.Position
-        domainEffect.Anchored = true
-        domainEffect.Transparency = 0.5
-        domainEffect.Color = Color3.fromRGB(0, 0, 255)
-        domainEffect.Parent = game.Workspace
-        wait(5)
-        domainEffect:Destroy()
-    end
-end
-
--- Função para ativar o O Olho do Infinito (detecção)
+-- Olho do Infinito (Highlight seguro)
 local function activateEyeOfInfinity()
     if teleportCooldown == 0 then
-        -- Detecta inimigos próximos e os destaca
-        local range = 50
         for _, enemy in pairs(game.Workspace:GetChildren()) do
             if enemy:IsA("Model") and enemy:FindFirstChild("Humanoid") and enemy ~= character then
-                local distance = (enemy.PrimaryPart.Position - character.PrimaryPart.Position).magnitude
-                if distance < range then
-                    -- Efeito visual de "detecção"
-                    local highlight = Instance.new("Highlight")
-                    highlight.Parent = enemy
-                    highlight.FillColor = Color3.fromRGB(255, 0, 0) -- Cor de destaque
-                    wait(5)
-                    highlight:Destroy()
-                end
+                local highlight = Instance.new("Highlight")
+                highlight.FillColor = Color3.fromRGB(255, 0, 0)
+                highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                highlight.Parent = enemy
+                game.Debris:AddItem(highlight, 5)
             end
         end
         teleportCooldown = 10
     end
 end
 
--- Função para Satoru’s Flash Step (teleporte)
-local function flashStep()
-    if teleportCooldown == 0 then
-        local mouse = player:GetMouse()
-        character:SetPrimaryPartCFrame(CFrame.new(mouse.Hit.p))
-        teleportCooldown = 15
-    end
-end
-
--- Função para Reversão do Infinito (cura)
+-- Reversão do Infinito (cura suave)
 local function reverseInfinity()
     if healthRegenCooldown == 0 then
-        humanoid.Health = humanoid.Health + humanoid.MaxHealth * 0.5
+        local heal = math.min(humanoid.MaxHealth * 0.25, humanoid.MaxHealth - humanoid.Health)
+        humanoid.Health = humanoid.Health + heal
         healthRegenCooldown = 25
     end
 end
 
--- Funções de cooldown
+-- Domínio Expandido (efeito visual seguro)
+local function activateDomainExpansion()
+    if domainCooldown == 0 then
+        local effect = Instance.new("Part")
+        effect.Size = Vector3.new(20, 1, 20)
+        effect.Position = hrp.Position
+        effect.Anchored = true
+        effect.Transparency = 0.5
+        effect.Color = Color3.fromRGB(0, 0, 255)
+        effect.CanCollide = false
+        effect.Parent = workspace
+        game.Debris:AddItem(effect, 3)
+        domainCooldown = 20
+    end
+end
+
+-- Flash Step
+local function flashStep()
+    if teleportCooldown == 0 then
+        local mouse = player:GetMouse()
+        safeTeleport(mouse.Hit.p)
+        teleportCooldown = 15
+    end
+end
+
+-- Cooldown handler
 game:GetService("RunService").Heartbeat:Connect(function()
-    if domainCooldown > 0 then
-        domainCooldown = domainCooldown - 1
-    end
-    if teleportCooldown > 0 then
-        teleportCooldown = teleportCooldown - 1
-    end
-    if healthRegenCooldown > 0 then
-        healthRegenCooldown = healthRegenCooldown - 1
-    end
+    if domainCooldown > 0 then domainCooldown -= 1 end
+    if teleportCooldown > 0 then teleportCooldown -= 1 end
+    if healthRegenCooldown > 0 then healthRegenCooldown -= 1 end
 end)
 
--- Comando para ativar/desativar o estilo Gojo
-player.InputBegan:Connect(function(input)
-    if input.KeyCode == Enum.KeyCode.G then
-        if styleActive then
-            deactivateInfinityTechnique()
-        else
-            activateInfinityTechnique()
-        end
-    end
+-- Keybinds
+local UserInputService = game:GetService("UserInputService")
+UserInputService.InputBegan:Connect(function(input, gpe)
+    if gpe then return end
+    if input.KeyCode == Enum.KeyCode.E then activateEyeOfInfinity() end
+    if input.KeyCode == Enum.KeyCode.R then flashStep() end
+    if input.KeyCode == Enum.KeyCode.F then reverseInfinity() end
+    if input.KeyCode == Enum.KeyCode.D then activateDomainExpansion() end
+    if input.KeyCode == Enum.KeyCode.I then simulateSpeed() end
 end)
 
--- Comandos para as habilidades ativas
-player.InputBegan:Connect(function(input)
-    if input.KeyCode == Enum.KeyCode.D then
-        activateDomainExpansion()
-    elseif input.KeyCode == Enum.KeyCode.E then
-        activateEyeOfInfinity()
-    elseif input.KeyCode == Enum.KeyCode.R then
-        flashStep()
-    elseif input.KeyCode == Enum.KeyCode.F then
-        reverseInfinity()
-    end
-end)
-
--- Fluxo de Gacha para o Estilo Gojo e seleção no Dropdown (no Zenin Hub)
-local function giveStyleGojo()
-    local styleDropdown = Instance.new("Dropdown")
-    styleDropdown.Name = "StyleDropdown"
-    styleDropdown.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui"):WaitForChild("ZeninHub")
-
-    styleDropdown:AddOption("Gojo - Infinity Master", function()
-        -- Ativar as habilidades de Gojo
-        activateInfinityTechnique()
-        activateDomainExpansion()
+-- Notificações
+local function notify(title, text)
+    pcall(function()
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = title,
+            Text = text,
+            Duration = 3
+        })
     end)
 end
 
--- Função de Unban (com efeito visual para reiniciar)
+-- Comando de unban visual
 local function unbanPlayer()
-    -- Desbanir jogador e recomeçar no início
-    local playerName = player.Name
-    -- Exemplo de reset do status de banimento
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "Unban Successful",
-        Text = playerName .. " foi desbanido!",
-        Duration = 3
-    })
+    notify("Unban", "Status de banimento resetado (visual)")
 end
 
--- Função para AutoGol
-local function autoGoal()
-    -- Comando para marcar gol automaticamente
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "Auto Gol",
-        Text = "Você marcou um gol automaticamente!",
-        Duration = 3
-    })
-end
-
--- Função para Stamina Infinita
-local function infiniteStamina()
-    -- Aumentar a stamina do jogador constantemente
-    humanoid.WalkSpeed = 200 -- exemplo de aumento na velocidade
-end
-
--- Chamando a função de criação de estilo Gojo no dropdown
-giveStyleGojo()
-
--- Comandos para funcionalidades extras
-player.InputBegan:Connect(function(input)
-    if input.KeyCode == Enum.KeyCode.U then
-        unbanPlayer()
-    elseif input.KeyCode == Enum.KeyCode.A then
-        autoGoal()
-    elseif input.KeyCode == Enum.KeyCode.I then
-        infiniteStamina()
-    end
+UserInputService.InputBegan:Connect(function(input, gpe)
+    if gpe then return end
+    if input.KeyCode == Enum.KeyCode.U then unbanPlayer() end
 end)
+
+notify("Zenin Hub", "Modo Gojo carregado com segurança!")
