@@ -1,205 +1,219 @@
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
+--[[ 
+Script para Dead Rails com Sistema de Key
+Inclui: Fly, Noclip, ESP, Teleporte, Vida Infinita, Combustível Infinito, Energia Infinita, Trem
+]]
 
--- CONFIGURAÇÕES
-local settings = {
-    espEnabled = false,
-    aimbotEnabled = false,
-    killauraEnabled = false,
-    noclipEnabled = false,
-    triggerbotEnabled = false,
-    aimPart = "Head",
-    aimFov = 150,
-    killauraRange = 10,
-    killauraDelay = 0.5,
-}
-
--- GUI
-local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
-ScreenGui.Name = "TestToolsGUI"
-
-local yOffset = 10
-local function createToggleButton(name, callback)
-    local button = Instance.new("TextButton")
-    button.Size = UDim2.new(0, 140, 0, 30)
-    button.Position = UDim2.new(0, 10, 0, yOffset)
-    button.Text = name .. ": OFF"
-    button.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    button.TextColor3 = Color3.fromRGB(255, 255, 255)
-    button.Parent = ScreenGui
-    button.MouseButton1Click:Connect(function()
-        settings[name] = not settings[name]
-        button.Text = name .. ": " .. (settings[name] and "ON" or "OFF")
-        callback(settings[name])
-    end)
-    yOffset = yOffset + 40
+-- Proteção
+local CoreGui = game:GetService("CoreGui")
+local function safeGuiParent()
+    return (gethui and gethui()) or CoreGui
 end
 
-createToggleButton("espEnabled", function() end)
-createToggleButton("aimbotEnabled", function() end)
-createToggleButton("killauraEnabled", function() end)
-createToggleButton("noclipEnabled", function() end)
-createToggleButton("triggerbotEnabled", function() end)
-
--- FOV Circle (Aimbot)
-local fovCircle = Drawing.new("Circle")
-fovCircle.Thickness = 1
-fovCircle.Transparency = 1
-fovCircle.Color = Color3.fromRGB(255, 255, 255)
-fovCircle.Filled = false
-fovCircle.Visible = false
-
--- ESP
-local espTable = {}
-local function createESP(player)
-    if player == LocalPlayer then return end
-    local text = Drawing.new("Text")
-    text.Size = 14
-    text.Center = true
-    text.Outline = true
-    text.Color = Color3.fromRGB(255, 0, 0)
-    text.Visible = false
-    espTable[player] = text
+if safeGuiParent():FindFirstChild("DR_GUI_6659") then
+    safeGuiParent()["DR_GUI_6659"]:Destroy()
 end
-local function removeESP(player)
-    if espTable[player] then espTable[player]:Remove(); espTable[player] = nil end
-end
-Players.PlayerAdded:Connect(function(p)
-    p.CharacterAdded:Connect(function() wait(1) createESP(p) end)
+
+-- GUI de Key
+local KeyGui = Instance.new("ScreenGui")
+KeyGui.Name = "DR_GUI_6659"
+KeyGui.Parent = safeGuiParent()
+KeyGui.ResetOnSpawn = false
+
+local KeyFrame = Instance.new("Frame")
+KeyFrame.Size = UDim2.new(0, 300, 0, 200)
+KeyFrame.Position = UDim2.new(0.5, -150, 0.5, -100)
+KeyFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+KeyFrame.BorderSizePixel = 0
+KeyFrame.Parent = KeyGui
+
+local KeyTitle = Instance.new("TextLabel")
+KeyTitle.Size = UDim2.new(1, 0, 0, 40)
+KeyTitle.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+KeyTitle.Text = "🔐 Insira a Key para desbloquear"
+KeyTitle.TextColor3 = Color3.new(1, 1, 1)
+KeyTitle.TextSize = 18
+KeyTitle.Parent = KeyFrame
+
+local KeyBox = Instance.new("TextBox")
+KeyBox.Size = UDim2.new(0.8, 0, 0, 30)
+KeyBox.Position = UDim2.new(0.1, 0, 0, 60)
+KeyBox.PlaceholderText = "Digite a key aqui..."
+KeyBox.Text = ""
+KeyBox.TextSize = 16
+KeyBox.TextColor3 = Color3.new(1, 1, 1)
+KeyBox.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+KeyBox.Parent = KeyFrame
+
+local CopyBtn = Instance.new("TextButton")
+CopyBtn.Size = UDim2.new(0.8, 0, 0, 30)
+CopyBtn.Position = UDim2.new(0.1, 0, 0, 100)
+CopyBtn.Text = "🔗 Obter Key"
+CopyBtn.TextSize = 16
+CopyBtn.TextColor3 = Color3.new(1, 1, 1)
+CopyBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+CopyBtn.Parent = KeyFrame
+CopyBtn.MouseButton1Click:Connect(function()
+    setclipboard("https://loot-link.com/s?KCyoj6LG")
 end)
-Players.PlayerRemoving:Connect(removeESP)
-for _, p in ipairs(Players:GetPlayers()) do
-    if p ~= LocalPlayer and p.Character then
-        createESP(p)
-        p.CharacterAdded:Connect(function() wait(1) createESP(p) end)
-    end
-end
 
--- Aimbot
-local rightClick = false
-UserInputService.InputBegan:Connect(function(i)
-    if i.UserInputType == Enum.UserInputType.MouseButton2 then rightClick = true end
-end)
-UserInputService.InputEnded:Connect(function(i)
-    if i.UserInputType == Enum.UserInputType.MouseButton2 then rightClick = false end
-end)
-local function getClosestEnemyInFov()
-    local closest, shortest = nil, settings.aimFov
-    for _, p in ipairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer and p.Team ~= LocalPlayer.Team and p.Character and p.Character:FindFirstChild(settings.aimPart) then
-            local pos, onScreen = Camera:WorldToViewportPoint(p.Character[settings.aimPart].Position)
-            if onScreen then
-                local dist = (Vector2.new(pos.X, pos.Y) - Camera.ViewportSize / 2).Magnitude
-                if dist < shortest then
-                    shortest = dist
-                    closest = p.Character[settings.aimPart]
+local EnviarBtn = Instance.new("TextButton")
+EnviarBtn.Size = UDim2.new(0.8, 0, 0, 30)
+EnviarBtn.Position = UDim2.new(0.1, 0, 0, 140)
+EnviarBtn.Text = "✅ Enviar Key"
+EnviarBtn.TextSize = 16
+EnviarBtn.TextColor3 = Color3.new(1, 1, 1)
+EnviarBtn.BackgroundColor3 = Color3.fromRGB(40, 130, 40)
+EnviarBtn.Parent = KeyFrame
+
+-- Efeito de Fade In
+KeyFrame.BackgroundTransparency = 1
+game:GetService("TweenService"):Create(KeyFrame, TweenInfo.new(0.5, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {BackgroundTransparency = 0}):Play()
+
+EnviarBtn.MouseButton1Click:Connect(function()
+    if KeyBox.Text:lower() == "baitola" then
+        -- Remove a janela de key
+        KeyFrame.Visible = false
+        wait(0.5)
+        
+        -- Menu Principal
+        local MainFrame = Instance.new("Frame")
+        MainFrame.Size = UDim2.new(0, 300, 0, 400)
+        MainFrame.Position = UDim2.new(0, 50, 0.5, -200)
+        MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+        MainFrame.BorderSizePixel = 0
+        MainFrame.Parent = KeyGui
+
+        local Title = Instance.new("TextLabel")
+        Title.Size = UDim2.new(1, 0, 0, 40)
+        Title.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        Title.Text = "🛠️ Menu Dead Rails"
+        Title.TextColor3 = Color3.new(1, 1, 1)
+        Title.TextSize = 20
+        Title.Parent = MainFrame
+
+        local function criarBotao(nome, ordem, callback)
+            local btn = Instance.new("TextButton")
+            btn.Size = UDim2.new(1, -20, 0, 30)
+            btn.Position = UDim2.new(0, 10, 0, 50 + (ordem - 1) * 35)
+            btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+            btn.TextColor3 = Color3.new(1, 1, 1)
+            btn.Text = nome
+            btn.TextSize = 16
+            btn.Parent = MainFrame
+
+            -- Efeito de Animação (fade in)
+            btn.TextTransparency = 1
+            game:GetService("TweenService"):Create(btn, TweenInfo.new(0.5, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {TextTransparency = 0}):Play()
+            
+            -- Animação do botão de Zoom
+            btn.MouseEnter:Connect(function()
+                game:GetService("TweenService"):Create(btn, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Size = UDim2.new(1, -20, 0, 40)}):Play()
+            end)
+            btn.MouseLeave:Connect(function()
+                game:GetService("TweenService"):Create(btn, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Size = UDim2.new(1, -20, 0, 30)}):Play()
+            end)
+
+            btn.MouseButton1Click:Connect(callback)
+        end
+
+        -- Sistema de Vida Infinita
+        local player = game.Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+        local humanoid = character:WaitForChild("Humanoid")
+        
+        humanoid.HealthChanged:Connect(function()
+            if humanoid.Health < humanoid.MaxHealth then
+                humanoid.Health = humanoid.MaxHealth
+            end
+        end)
+
+        -- Sistema de Combustível Infinito (Trem)
+        local function ativarCombustivelInfinito()
+            local trem = character:FindFirstChild("Train") -- Supondo que o trem é um modelo chamado "Train"
+            if trem then
+                local combustivel = trem:FindFirstChild("Fuel") -- Supondo que o combustível do trem é controlado por esse atributo
+                if combustivel then
+                    combustivel.Value = math.huge -- Combustível infinito
                 end
             end
         end
-    end
-    return closest
-end
 
--- KillAura
-local lastAttack = 0
-local function getClosestInRange()
-    local closest, shortest = nil, settings.killauraRange
-    local myPos = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if not myPos then return nil end
-    for _, p in ipairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer and p.Team ~= LocalPlayer.Team and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-            local dist = (p.Character.HumanoidRootPart.Position - myPos.Position).Magnitude
-            if dist < shortest then
-                shortest = dist
-                closest = p
+        -- Sistema de Energia Infinita
+        local function ativarEnergiaInfinita()
+            -- Vamos assumir que a energia é controlada de forma similar ao combustível
+            local energia = character:FindFirstChild("Energia") -- Exemplo de energia
+            if energia then
+                energia.Value = math.huge -- Energia infinita
             end
         end
-    end
-    return closest
-end
-local function attack(target)
-    local tool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool")
-    if tool and tool:FindFirstChild("Activate") then
-        tool:Activate()
-    else
-        local hum = target.Character and target.Character:FindFirstChild("Humanoid")
-        if hum then hum:TakeDamage(10) end
-    end
-end
 
--- NoClip
-RunService.Stepped:Connect(function()
-    if settings.noclipEnabled and LocalPlayer.Character then
-        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
-            if part:IsA("BasePart") and part.CanCollide then
-                part.CanCollide = false
-            end
-        end
-    end
-end)
+        -- Ativar os sistemas de combustível e energia infinita
+        ativarCombustivelInfinito()
+        ativarEnergiaInfinita()
 
--- Triggerbot
-local function getTargetUnderCrosshair()
-    local unitRay = Camera:ScreenPointToRay(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-    local ray = Ray.new(unitRay.Origin, unitRay.Direction * 1000)
-    local part, pos = workspace:FindPartOnRay(ray, LocalPlayer.Character, false, true)
-    if part then
-        local model = part:FindFirstAncestorOfClass("Model")
-        if model and Players:GetPlayerFromCharacter(model) and Players:GetPlayerFromCharacter(model) ~= LocalPlayer then
-            return Players:GetPlayerFromCharacter(model)
-        end
-    end
-    return nil
-end
+        -- Criando os botões no menu
+        criarBotao("Ir para o Castelo", 1, function()
+            teleportar(Vector3.new(100, 10, 100))
+        end)
 
--- Loop Principal
-RunService.RenderStepped:Connect(function()
-    -- ESP
-    for player, text in pairs(espTable) do
-        local head = player.Character and player.Character:FindFirstChild("Head")
-        if settings.espEnabled and head and player.Team ~= LocalPlayer.Team then
-            local pos, onScreen = Camera:WorldToViewportPoint(head.Position)
-            if onScreen then
-                text.Position = Vector2.new(pos.X, pos.Y - 20)
-                text.Text = player.Name
-                text.Visible = true
+        criarBotao("Ir para Cidade Abandonada", 2, function()
+            teleportar(Vector3.new(-150, 10, 200))
+        end)
+
+        criarBotao("Ir para o Laboratório", 3, function()
+            teleportar(Vector3.new(250, 10, -100))
+        end)
+
+        criarBotao("Ir para o Final", 4, function()
+            teleportar(Vector3.new(0, 10, 0))
+        end)
+
+        -- Botão para Fly
+        local flying = false
+        criarBotao("Ativar Fly", 5, function()
+            local player = game.Players.LocalPlayer
+            local char = player.Character or player.CharacterAdded:Wait()
+            local hrp = char:WaitForChild("HumanoidRootPart")
+            flying = not flying
+            if flying then
+                local bv = Instance.new("BodyVelocity")
+                bv.Name = "FlyVelocity"
+                bv.MaxForce = Vector3.new(1, 1, 1) * 1e9
+                bv.Velocity = Vector3.new(0, 50, 0)
+                bv.Parent = hrp
             else
-                text.Visible = false
+                if hrp:FindFirstChild("FlyVelocity") then
+                    hrp:FindFirstChild("FlyVelocity"):Destroy()
+                end
             end
-        else
-            text.Visible = false
-        end
-    end
+        end)
 
-    -- Aimbot
-    fovCircle.Visible = settings.aimbotEnabled
-    fovCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-    fovCircle.Radius = settings.aimFov
+        -- Botão para Noclip
+        local noclip = false
+        criarBotao("Ativar Noclip", 6, function()
+            noclip = not noclip
+            game:GetService("RunService").Stepped:Connect(function()
+                if noclip then
+                    for _, v in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
+                        if v:IsA("BasePart") and v.CanCollide then
+                            v.CanCollide = false
+                        end
+                    end
+                end
+            end)
+        end)
 
-    if settings.aimbotEnabled and rightClick then
-        local target = getClosestEnemyInFov()
-        if target then
-            Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
-        end
-    end
-
-    -- KillAura
-    if settings.killauraEnabled and tick() - lastAttack >= settings.killauraDelay then
-        local target = getClosestInRange()
-        if target then
-            attack(target)
-            lastAttack = tick()
-        end
-    end
-
-    -- Triggerbot
-    if settings.triggerbotEnabled then
-        local target = getTargetUnderCrosshair()
-        if target then
-            attack(target)
-        end
+        -- Botão de Minimizar/Maximizar
+        local minimizado = false
+        criarBotao("Minimizar/Maximizar", 7, function()
+            for _, v in pairs(MainFrame:GetChildren()) do
+                if v:IsA("TextButton") or v:IsA("TextLabel") then
+                    if v ~= Title then v.Visible = not minimizado end
+                end
+            end
+            minimizado = not minimizado
+        end)
+    else
+        KeyBox.Text = "❌ Key incorreta"
     end
 end)
