@@ -1,219 +1,205 @@
---[[ 
-Script para Dead Rails com Sistema de Key
-Inclui: Fly, Noclip, ESP, Teleporte, Vida Infinita, Combustível Infinito, Energia Infinita, Trem
-]]
+-- Script do Zenin Hub para Blue Lock Rivals com o Estilo Gojo
+-- Este script contém o sistema de seleção de estilo, incluindo Gojo e suas habilidades
 
--- Proteção
-local CoreGui = game:GetService("CoreGui")
-local function safeGuiParent()
-    return (gethui and gethui()) or CoreGui
-end
+local player = game.Players.LocalPlayer
+local character = player.Character
+local humanoid = character:WaitForChild("Humanoid")
 
-if safeGuiParent():FindFirstChild("DR_GUI_6659") then
-    safeGuiParent()["DR_GUI_6659"]:Destroy()
-end
+-- Atributos do Estilo Gojo
+local styleActive = false
+local healthRegenCooldown = 0
+local teleportCooldown = 0
+local domainCooldown = 0
 
--- GUI de Key
-local KeyGui = Instance.new("ScreenGui")
-KeyGui.Name = "DR_GUI_6659"
-KeyGui.Parent = safeGuiParent()
-KeyGui.ResetOnSpawn = false
-
-local KeyFrame = Instance.new("Frame")
-KeyFrame.Size = UDim2.new(0, 300, 0, 200)
-KeyFrame.Position = UDim2.new(0.5, -150, 0.5, -100)
-KeyFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-KeyFrame.BorderSizePixel = 0
-KeyFrame.Parent = KeyGui
-
-local KeyTitle = Instance.new("TextLabel")
-KeyTitle.Size = UDim2.new(1, 0, 0, 40)
-KeyTitle.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-KeyTitle.Text = "🔐 Insira a Key para desbloquear"
-KeyTitle.TextColor3 = Color3.new(1, 1, 1)
-KeyTitle.TextSize = 18
-KeyTitle.Parent = KeyFrame
-
-local KeyBox = Instance.new("TextBox")
-KeyBox.Size = UDim2.new(0.8, 0, 0, 30)
-KeyBox.Position = UDim2.new(0.1, 0, 0, 60)
-KeyBox.PlaceholderText = "Digite a key aqui..."
-KeyBox.Text = ""
-KeyBox.TextSize = 16
-KeyBox.TextColor3 = Color3.new(1, 1, 1)
-KeyBox.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-KeyBox.Parent = KeyFrame
-
-local CopyBtn = Instance.new("TextButton")
-CopyBtn.Size = UDim2.new(0.8, 0, 0, 30)
-CopyBtn.Position = UDim2.new(0.1, 0, 0, 100)
-CopyBtn.Text = "🔗 Obter Key"
-CopyBtn.TextSize = 16
-CopyBtn.TextColor3 = Color3.new(1, 1, 1)
-CopyBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-CopyBtn.Parent = KeyFrame
-CopyBtn.MouseButton1Click:Connect(function()
-    setclipboard("https://loot-link.com/s?KCyoj6LG")
-end)
-
-local EnviarBtn = Instance.new("TextButton")
-EnviarBtn.Size = UDim2.new(0.8, 0, 0, 30)
-EnviarBtn.Position = UDim2.new(0.1, 0, 0, 140)
-EnviarBtn.Text = "✅ Enviar Key"
-EnviarBtn.TextSize = 16
-EnviarBtn.TextColor3 = Color3.new(1, 1, 1)
-EnviarBtn.BackgroundColor3 = Color3.fromRGB(40, 130, 40)
-EnviarBtn.Parent = KeyFrame
-
--- Efeito de Fade In
-KeyFrame.BackgroundTransparency = 1
-game:GetService("TweenService"):Create(KeyFrame, TweenInfo.new(0.5, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {BackgroundTransparency = 0}):Play()
-
-EnviarBtn.MouseButton1Click:Connect(function()
-    if KeyBox.Text:lower() == "baitola" then
-        -- Remove a janela de key
-        KeyFrame.Visible = false
-        wait(0.5)
-        
-        -- Menu Principal
-        local MainFrame = Instance.new("Frame")
-        MainFrame.Size = UDim2.new(0, 300, 0, 400)
-        MainFrame.Position = UDim2.new(0, 50, 0.5, -200)
-        MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-        MainFrame.BorderSizePixel = 0
-        MainFrame.Parent = KeyGui
-
-        local Title = Instance.new("TextLabel")
-        Title.Size = UDim2.new(1, 0, 0, 40)
-        Title.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-        Title.Text = "🛠️ Menu Dead Rails"
-        Title.TextColor3 = Color3.new(1, 1, 1)
-        Title.TextSize = 20
-        Title.Parent = MainFrame
-
-        local function criarBotao(nome, ordem, callback)
-            local btn = Instance.new("TextButton")
-            btn.Size = UDim2.new(1, -20, 0, 30)
-            btn.Position = UDim2.new(0, 10, 0, 50 + (ordem - 1) * 35)
-            btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-            btn.TextColor3 = Color3.new(1, 1, 1)
-            btn.Text = nome
-            btn.TextSize = 16
-            btn.Parent = MainFrame
-
-            -- Efeito de Animação (fade in)
-            btn.TextTransparency = 1
-            game:GetService("TweenService"):Create(btn, TweenInfo.new(0.5, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {TextTransparency = 0}):Play()
-            
-            -- Animação do botão de Zoom
-            btn.MouseEnter:Connect(function()
-                game:GetService("TweenService"):Create(btn, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Size = UDim2.new(1, -20, 0, 40)}):Play()
-            end)
-            btn.MouseLeave:Connect(function()
-                game:GetService("TweenService"):Create(btn, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Size = UDim2.new(1, -20, 0, 30)}):Play()
-            end)
-
-            btn.MouseButton1Click:Connect(callback)
-        end
-
-        -- Sistema de Vida Infinita
-        local player = game.Players.LocalPlayer
-        local character = player.Character or player.CharacterAdded:Wait()
-        local humanoid = character:WaitForChild("Humanoid")
-        
-        humanoid.HealthChanged:Connect(function()
-            if humanoid.Health < humanoid.MaxHealth then
-                humanoid.Health = humanoid.MaxHealth
-            end
-        end)
-
-        -- Sistema de Combustível Infinito (Trem)
-        local function ativarCombustivelInfinito()
-            local trem = character:FindFirstChild("Train") -- Supondo que o trem é um modelo chamado "Train"
-            if trem then
-                local combustivel = trem:FindFirstChild("Fuel") -- Supondo que o combustível do trem é controlado por esse atributo
-                if combustivel then
-                    combustivel.Value = math.huge -- Combustível infinito
+-- Função para ativar a Técnica do Infinito (redução de velocidade dos inimigos próximos)
+local function activateInfinityTechnique()
+    styleActive = true
+    -- Reduz a velocidade dos inimigos próximos
+    local range = 20 -- raio de ação
+    for _, enemy in pairs(game.Workspace:GetChildren()) do
+        if enemy:IsA("Model") and enemy:FindFirstChild("Humanoid") and enemy ~= character then
+            local distance = (enemy.PrimaryPart.Position - character.PrimaryPart.Position).magnitude
+            if distance < range then
+                local enemyHumanoid = enemy:FindFirstChild("Humanoid")
+                if enemyHumanoid then
+                    enemyHumanoid.WalkSpeed = enemyHumanoid.WalkSpeed * 0.5 -- Reduzindo a velocidade
                 end
             end
         end
+    end
+end
 
-        -- Sistema de Energia Infinita
-        local function ativarEnergiaInfinita()
-            -- Vamos assumir que a energia é controlada de forma similar ao combustível
-            local energia = character:FindFirstChild("Energia") -- Exemplo de energia
-            if energia then
-                energia.Value = math.huge -- Energia infinita
+-- Função para reverter a Técnica do Infinito
+local function deactivateInfinityTechnique()
+    styleActive = false
+    -- Restaura a velocidade normal dos inimigos
+    for _, enemy in pairs(game.Workspace:GetChildren()) do
+        if enemy:IsA("Model") and enemy:FindFirstChild("Humanoid") and enemy ~= character then
+            local enemyHumanoid = enemy:FindFirstChild("Humanoid")
+            if enemyHumanoid then
+                enemyHumanoid.WalkSpeed = 16 -- Velocidade padrão
             end
         end
+    end
+end
 
-        -- Ativar os sistemas de combustível e energia infinita
-        ativarCombustivelInfinito()
-        ativarEnergiaInfinita()
-
-        -- Criando os botões no menu
-        criarBotao("Ir para o Castelo", 1, function()
-            teleportar(Vector3.new(100, 10, 100))
-        end)
-
-        criarBotao("Ir para Cidade Abandonada", 2, function()
-            teleportar(Vector3.new(-150, 10, 200))
-        end)
-
-        criarBotao("Ir para o Laboratório", 3, function()
-            teleportar(Vector3.new(250, 10, -100))
-        end)
-
-        criarBotao("Ir para o Final", 4, function()
-            teleportar(Vector3.new(0, 10, 0))
-        end)
-
-        -- Botão para Fly
-        local flying = false
-        criarBotao("Ativar Fly", 5, function()
-            local player = game.Players.LocalPlayer
-            local char = player.Character or player.CharacterAdded:Wait()
-            local hrp = char:WaitForChild("HumanoidRootPart")
-            flying = not flying
-            if flying then
-                local bv = Instance.new("BodyVelocity")
-                bv.Name = "FlyVelocity"
-                bv.MaxForce = Vector3.new(1, 1, 1) * 1e9
-                bv.Velocity = Vector3.new(0, 50, 0)
-                bv.Parent = hrp
-            else
-                if hrp:FindFirstChild("FlyVelocity") then
-                    hrp:FindFirstChild("FlyVelocity"):Destroy()
-                end
-            end
-        end)
-
-        -- Botão para Noclip
-        local noclip = false
-        criarBotao("Ativar Noclip", 6, function()
-            noclip = not noclip
-            game:GetService("RunService").Stepped:Connect(function()
-                if noclip then
-                    for _, v in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
-                        if v:IsA("BasePart") and v.CanCollide then
-                            v.CanCollide = false
-                        end
+-- Função para ativar o Domínio Expandido (danos contínuos)
+local function activateDomainExpansion()
+    if domainCooldown == 0 then
+        domainCooldown = 20
+        -- Aplica dano contínuo aos inimigos próximos
+        local range = 10
+        for _, enemy in pairs(game.Workspace:GetChildren()) do
+            if enemy:IsA("Model") and enemy:FindFirstChild("Humanoid") and enemy ~= character then
+                local distance = (enemy.PrimaryPart.Position - character.PrimaryPart.Position).magnitude
+                if distance < range then
+                    local enemyHumanoid = enemy:FindFirstChild("Humanoid")
+                    if enemyHumanoid then
+                        enemyHumanoid:TakeDamage(5) -- Dano contínuo
                     end
                 end
-            end)
-        end)
+            end
+        end
+        -- Exemplo de efeito visual para o domínio expandido
+        local domainEffect = Instance.new("Part")
+        domainEffect.Size = Vector3.new(20, 1, 20)
+        domainEffect.Position = character.PrimaryPart.Position
+        domainEffect.Anchored = true
+        domainEffect.Transparency = 0.5
+        domainEffect.Color = Color3.fromRGB(0, 0, 255)
+        domainEffect.Parent = game.Workspace
+        wait(5)
+        domainEffect:Destroy()
+    end
+end
 
-        -- Botão de Minimizar/Maximizar
-        local minimizado = false
-        criarBotao("Minimizar/Maximizar", 7, function()
-            for _, v in pairs(MainFrame:GetChildren()) do
-                if v:IsA("TextButton") or v:IsA("TextLabel") then
-                    if v ~= Title then v.Visible = not minimizado end
+-- Função para ativar o O Olho do Infinito (detecção)
+local function activateEyeOfInfinity()
+    if teleportCooldown == 0 then
+        -- Detecta inimigos próximos e os destaca
+        local range = 50
+        for _, enemy in pairs(game.Workspace:GetChildren()) do
+            if enemy:IsA("Model") and enemy:FindFirstChild("Humanoid") and enemy ~= character then
+                local distance = (enemy.PrimaryPart.Position - character.PrimaryPart.Position).magnitude
+                if distance < range then
+                    -- Efeito visual de "detecção"
+                    local highlight = Instance.new("Highlight")
+                    highlight.Parent = enemy
+                    highlight.FillColor = Color3.fromRGB(255, 0, 0) -- Cor de destaque
+                    wait(5)
+                    highlight:Destroy()
                 end
             end
-            minimizado = not minimizado
-        end)
-    else
-        KeyBox.Text = "❌ Key incorreta"
+        end
+        teleportCooldown = 10
+    end
+end
+
+-- Função para Satoru’s Flash Step (teleporte)
+local function flashStep()
+    if teleportCooldown == 0 then
+        local mouse = player:GetMouse()
+        character:SetPrimaryPartCFrame(CFrame.new(mouse.Hit.p))
+        teleportCooldown = 15
+    end
+end
+
+-- Função para Reversão do Infinito (cura)
+local function reverseInfinity()
+    if healthRegenCooldown == 0 then
+        humanoid.Health = humanoid.Health + humanoid.MaxHealth * 0.5
+        healthRegenCooldown = 25
+    end
+end
+
+-- Funções de cooldown
+game:GetService("RunService").Heartbeat:Connect(function()
+    if domainCooldown > 0 then
+        domainCooldown = domainCooldown - 1
+    end
+    if teleportCooldown > 0 then
+        teleportCooldown = teleportCooldown - 1
+    end
+    if healthRegenCooldown > 0 then
+        healthRegenCooldown = healthRegenCooldown - 1
+    end
+end)
+
+-- Comando para ativar/desativar o estilo Gojo
+player.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.G then
+        if styleActive then
+            deactivateInfinityTechnique()
+        else
+            activateInfinityTechnique()
+        end
+    end
+end)
+
+-- Comandos para as habilidades ativas
+player.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.D then
+        activateDomainExpansion()
+    elseif input.KeyCode == Enum.KeyCode.E then
+        activateEyeOfInfinity()
+    elseif input.KeyCode == Enum.KeyCode.R then
+        flashStep()
+    elseif input.KeyCode == Enum.KeyCode.F then
+        reverseInfinity()
+    end
+end)
+
+-- Fluxo de Gacha para o Estilo Gojo e seleção no Dropdown (no Zenin Hub)
+local function giveStyleGojo()
+    local styleDropdown = Instance.new("Dropdown")
+    styleDropdown.Name = "StyleDropdown"
+    styleDropdown.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui"):WaitForChild("ZeninHub")
+
+    styleDropdown:AddOption("Gojo - Infinity Master", function()
+        -- Ativar as habilidades de Gojo
+        activateInfinityTechnique()
+        activateDomainExpansion()
+    end)
+end
+
+-- Função de Unban (com efeito visual para reiniciar)
+local function unbanPlayer()
+    -- Desbanir jogador e recomeçar no início
+    local playerName = player.Name
+    -- Exemplo de reset do status de banimento
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "Unban Successful",
+        Text = playerName .. " foi desbanido!",
+        Duration = 3
+    })
+end
+
+-- Função para AutoGol
+local function autoGoal()
+    -- Comando para marcar gol automaticamente
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "Auto Gol",
+        Text = "Você marcou um gol automaticamente!",
+        Duration = 3
+    })
+end
+
+-- Função para Stamina Infinita
+local function infiniteStamina()
+    -- Aumentar a stamina do jogador constantemente
+    humanoid.WalkSpeed = 200 -- exemplo de aumento na velocidade
+end
+
+-- Chamando a função de criação de estilo Gojo no dropdown
+giveStyleGojo()
+
+-- Comandos para funcionalidades extras
+player.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.U then
+        unbanPlayer()
+    elseif input.KeyCode == Enum.KeyCode.A then
+        autoGoal()
+    elseif input.KeyCode == Enum.KeyCode.I then
+        infiniteStamina()
     end
 end)
